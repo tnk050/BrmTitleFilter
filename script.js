@@ -1,11 +1,9 @@
 // グローバル変数なのであえてvar
 var brmUl = '.brm-page ul';
 var fullList = null;
-var fullListArray = null;
 // リストの初期値を取得する
 document.addEventListener('DOMContentLoaded', () => {
   fullList = document.querySelector(brmUl).querySelectorAll('.brm-page li');
-  fullListArray = Array.from(fullList);
 });
 
 function createItem(category) {
@@ -20,8 +18,8 @@ function createItem(category) {
     if (!regex) {
       return ['All'];
     }
-    const dupliceteDetails = fullListArray.map(
-      (item) => regex.exec(item.innerText)[1]
+    const dupliceteDetails = Array.from(fullList).map(
+      (item) => item.innerText.match(regex)[1]
     );
     const details = Array.from(new Set(dupliceteDetails));
     return details.sort((a, b) => a.localeCompare(b, 'ja', { numeric: true }));
@@ -38,22 +36,21 @@ function selectSorting(category) {
   // タイトルから抜き出す文字列を決める
   const dist = /(\d{3,})km/;
   const date = /BRM(\d{3,})/;
+  const postponeDate = /BRM(\d{3,})/g;
   const team = /（(\S{2,})）/;
   const depart =
     /km\s([\u30a0-\u30ff\u3040-\u309f\u3005-\u3006\u30e0-\u9fcf]+)/; //[日本語に一致]
   switch (category) {
     case 'date':
       return date;
-      break;
     case 'distance':
       return dist;
-      break;
     case 'team':
       return team;
-      break;
     case 'depart':
       return depart;
-      break;
+    case 'postponeDate':
+      return postponeDate;
     default:
       return undefined;
   }
@@ -79,9 +76,10 @@ function sorting(dom, category) {
   const sortRegex = selectSorting(category);
   if (!sortRegex) return;
   listArray.sort((a, b) =>
-    sortRegex
-      .exec(a.innerText)[1]
-      .localeCompare(sortRegex.exec(b.innerText)[1], 'ja', { numeric: true })
+    {const textA=a.innerText.match(sortRegex);
+      const textB=b.innerText.match(sortRegex);
+      return textA[textA.length-1]
+          .localeCompare(textB[textB.length-1], 'ja', { numeric: true })}
   );
   listArray.forEach((item) => dom.appendChild(item));
 }
@@ -107,8 +105,8 @@ function filtering(dom, detail) {
   }
   const filterList =
     detail === 'All'
-      ? fullListArray
-      : fullListArray.filter((item) => item.innerText.match(detail));
+      ? Array.from(fullList)
+      : Array.from(fullList).filter((item) => item.innerText.match(detail));
   filterList.forEach((item) => dom.appendChild(item));
 }
 
