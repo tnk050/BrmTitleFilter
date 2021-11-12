@@ -1,11 +1,9 @@
 // グローバル変数なのであえてvar
 var brmUl = '.brm-page ul';
 var fullList = null;
-var fullListArray = null;
 // リストの初期値を取得する
 document.addEventListener('DOMContentLoaded', () => {
   fullList = document.querySelector(brmUl).querySelectorAll('.brm-page li');
-  fullListArray = Array.from(fullList);
 });
 
 function createItem(category) {
@@ -15,17 +13,7 @@ function createItem(category) {
   if (existingDetail) {
     existingDetail.forEach((item) => selector.removeChild(item));
   }
-  const addList = (() => {
-    const regex = selectSorting(category);
-    if (!regex) {
-      return ['All'];
-    }
-    const dupliceteDetails = fullListArray.map(
-      (item) => regex.exec(item.innerText)[1]
-    );
-    const details = Array.from(new Set(dupliceteDetails));
-    return details.sort((a, b) => a.localeCompare(b, 'ja', { numeric: true }));
-  })();
+  const addList = detailListing(category);
   addList.forEach((item) => {
     const op = document.createElement('option');
     op.value = item;
@@ -34,26 +22,37 @@ function createItem(category) {
   });
 }
 
+function detailListing(category) {
+  const regex = selectSorting(category);
+  if (!regex) {
+    return ['All'];
+  }
+  const dupliceteDetails = Array.from(fullList).map(
+    (item) => item.innerText.match(regex)[1]
+  );
+  const details = Array.from(new Set(dupliceteDetails));
+  return details.sort((a, b) => a.localeCompare(b, 'ja', { numeric: true }));
+}
+
 function selectSorting(category) {
   // タイトルから抜き出す文字列を決める
   const dist = /(\d{3,})km/;
   const date = /BRM(\d{3,})/;
+  const postponeDate = /BRM(\d{3,})/g;
   const team = /（(\S{2,})）/;
   const depart =
     /km\s([\u30a0-\u30ff\u3040-\u309f\u3005-\u3006\u30e0-\u9fcf]+)/; //[日本語に一致]
   switch (category) {
     case 'date':
       return date;
-      break;
     case 'distance':
       return dist;
-      break;
     case 'team':
       return team;
-      break;
     case 'depart':
       return depart;
-      break;
+    case 'postponeDate':
+      return postponeDate;
     default:
       return undefined;
   }
@@ -78,28 +77,34 @@ function sorting(dom, category) {
   const listArray = Array.from(pageList);
   const sortRegex = selectSorting(category);
   if (!sortRegex) return;
-  listArray.sort((a, b) =>
-    sortRegex
-      .exec(a.innerText)[1]
-      .localeCompare(sortRegex.exec(b.innerText)[1], 'ja', { numeric: true })
-  );
+  listArray.sort((a, b) => {
+    const textA = a.innerText.match(sortRegex);
+    const textB = b.innerText.match(sortRegex);
+    return textA[textA.length - 1].localeCompare(
+      textB[textB.length - 1],
+      'ja',
+      { numeric: true }
+    );
+  });
   listArray.forEach((item) => dom.appendChild(item));
 }
 
-function filterBrm(detail) {
+function filterBrm(form) {
   // フィルタ処理
+  const category = form.filterBy.value;
+  const detail = form.detail.value;
   const target = document.querySelector(brmUl);
   const fadeDirection = 'Y';
   const fadePx = 50;
   const fadeTime = 500;
   fadeInOut(target, fadeDirection, fadePx, fadeTime);
   window.setTimeout(() => {
-    filtering(target, detail);
+    filtering(target, category, detail);
     fadeInOut(target, fadeDirection, 0, fadeTime);
   }, fadeTime + 100);
 }
 
-function filtering(dom, detail) {
+function filtering(dom, category, detail) {
   // フィルタ実行部分
   const existingList = dom.querySelectorAll('li');
   if (existingList) {
@@ -107,8 +112,11 @@ function filtering(dom, detail) {
   }
   const filterList =
     detail === 'All'
-      ? fullListArray
-      : fullListArray.filter((item) => item.innerText.match(detail));
+      ? Array.from(fullList)
+      // スタート地点とチーム名の重複を回避するために正規表現で取り出した値に対して一致をかける
+      : Array.from(fullList).filter((item) =>
+          item.innerText.match(selectSorting(category))[1].match(detail)
+        );
   filterList.forEach((item) => dom.appendChild(item));
 }
 
