@@ -13,23 +13,25 @@ function createItem(category) {
   if (existingDetail) {
     existingDetail.forEach((item) => selector.removeChild(item));
   }
-  const addList = (() => {
-    const regex = selectSorting(category);
-    if (!regex) {
-      return ['All'];
-    }
-    const dupliceteDetails = Array.from(fullList).map(
-      (item) => item.innerText.match(regex)[1]
-    );
-    const details = Array.from(new Set(dupliceteDetails));
-    return details.sort((a, b) => a.localeCompare(b, 'ja', { numeric: true }));
-  })();
+  const addList = detailListing(category);
   addList.forEach((item) => {
     const op = document.createElement('option');
     op.value = item;
     op.text = item;
     selector.appendChild(op);
   });
+}
+
+function detailListing(category) {
+  const regex = selectSorting(category);
+  if (!regex) {
+    return ['All'];
+  }
+  const dupliceteDetails = Array.from(fullList).map(
+    (item) => item.innerText.match(regex)[1]
+  );
+  const details = Array.from(new Set(dupliceteDetails));
+  return details.sort((a, b) => a.localeCompare(b, 'ja', { numeric: true }));
 }
 
 function selectSorting(category) {
@@ -75,29 +77,34 @@ function sorting(dom, category) {
   const listArray = Array.from(pageList);
   const sortRegex = selectSorting(category);
   if (!sortRegex) return;
-  listArray.sort((a, b) =>
-    {const textA=a.innerText.match(sortRegex);
-      const textB=b.innerText.match(sortRegex);
-      return textA[textA.length-1]
-          .localeCompare(textB[textB.length-1], 'ja', { numeric: true })}
-  );
+  listArray.sort((a, b) => {
+    const textA = a.innerText.match(sortRegex);
+    const textB = b.innerText.match(sortRegex);
+    return textA[textA.length - 1].localeCompare(
+      textB[textB.length - 1],
+      'ja',
+      { numeric: true }
+    );
+  });
   listArray.forEach((item) => dom.appendChild(item));
 }
 
-function filterBrm(detail) {
+function filterBrm(form) {
   // フィルタ処理
+  const category = form.filterBy.value;
+  const detail = form.detail.value;
   const target = document.querySelector(brmUl);
   const fadeDirection = 'Y';
   const fadePx = 50;
   const fadeTime = 500;
   fadeInOut(target, fadeDirection, fadePx, fadeTime);
   window.setTimeout(() => {
-    filtering(target, detail);
+    filtering(target, category, detail);
     fadeInOut(target, fadeDirection, 0, fadeTime);
   }, fadeTime + 100);
 }
 
-function filtering(dom, detail) {
+function filtering(dom, category, detail) {
   // フィルタ実行部分
   const existingList = dom.querySelectorAll('li');
   if (existingList) {
@@ -106,7 +113,10 @@ function filtering(dom, detail) {
   const filterList =
     detail === 'All'
       ? Array.from(fullList)
-      : Array.from(fullList).filter((item) => item.innerText.match(detail));
+      // スタート地点とチーム名の重複を回避するために正規表現で取り出した値に対して一致をかける
+      : Array.from(fullList).filter((item) =>
+          item.innerText.match(selectSorting(category))[1].match(detail)
+        );
   filterList.forEach((item) => dom.appendChild(item));
 }
 
