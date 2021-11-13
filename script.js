@@ -4,6 +4,7 @@ var fullList = null;
 // リストの初期値を取得する
 document.addEventListener('DOMContentLoaded', () => {
   fullList = document.querySelector(brmUl).querySelectorAll('.brm-page li');
+  createItem(document.getElementById('filter').filterBy.value); //更新時の再表示
 });
 
 function createItem(category) {
@@ -23,14 +24,15 @@ function createItem(category) {
 }
 
 function detailListing(category) {
+  // カテゴリの正規表現に一致したDOMの配列を返す
   const regex = selectSorting(category);
   if (!regex) {
     return ['All'];
   }
-  const dupliceteDetails = Array.from(fullList).map(
+  const duplicateDetails = Array.from(fullList).map(
     (item) => item.innerText.match(regex)[1]
   );
-  const details = Array.from(new Set(dupliceteDetails));
+  const details = Array.from(new Set(duplicateDetails));
   return details.sort((a, b) => a.localeCompare(b, 'ja', { numeric: true }));
 }
 
@@ -61,14 +63,14 @@ function selectSorting(category) {
 function sortBrm(category) {
   // 並べ替え処理
   const target = document.querySelector(brmUl);
-  const fadeDirection = 'X';
-  const fadePx = 75;
-  const fadeTime = 500;
-  fadeInOut(target, fadeDirection, fadePx, fadeTime);
-  window.setTimeout(() => {
-    sorting(target, category);
-    fadeInOut(target, fadeDirection, 0, fadeTime);
-  }, fadeTime + 100);
+  const existingList = target.querySelectorAll('li');
+  const moves = { direction: 'X', movePx: 75, setTime: 500 };
+  const argument = [target, category];
+  peekABoo(target, moves, recreateList, [
+    target,
+    existingList,
+    sorting(...argument),
+  ]);
 }
 
 function sorting(dom, category) {
@@ -77,7 +79,7 @@ function sorting(dom, category) {
   const listArray = Array.from(pageList);
   const sortRegex = selectSorting(category);
   if (!sortRegex) return;
-  listArray.sort((a, b) => {
+  return listArray.sort((a, b) => {
     const textA = a.innerText.match(sortRegex);
     const textB = b.innerText.match(sortRegex);
     return textA[textA.length - 1].localeCompare(
@@ -86,38 +88,45 @@ function sorting(dom, category) {
       { numeric: true }
     );
   });
-  listArray.forEach((item) => dom.appendChild(item));
 }
 
 function filterBrm(form) {
   // フィルタ処理
-  const category = form.filterBy.value;
-  const detail = form.detail.value;
   const target = document.querySelector(brmUl);
-  const fadeDirection = 'Y';
-  const fadePx = 50;
-  const fadeTime = 500;
-  fadeInOut(target, fadeDirection, fadePx, fadeTime);
-  window.setTimeout(() => {
-    filtering(target, category, detail);
-    fadeInOut(target, fadeDirection, 0, fadeTime);
-  }, fadeTime + 100);
+  const existingList = target.querySelectorAll('li');
+  const moves = { direction: 'Y', movePx: 50, setTime: 500 };
+  const argument = [target, form.filterBy.value, form.detail.value];
+  peekABoo(target, moves, recreateList, [
+    target,
+    existingList,
+    filtering(...argument),
+  ]);
 }
 
 function filtering(dom, category, detail) {
   // フィルタ実行部分
-  const existingList = dom.querySelectorAll('li');
-  if (existingList) {
-    existingList.forEach((item) => dom.removeChild(item));
-  }
-  const filterList =
-    detail === 'All'
-      ? Array.from(fullList)
-      // スタート地点とチーム名の重複を回避するために正規表現で取り出した値に対して一致をかける
-      : Array.from(fullList).filter((item) =>
-          item.innerText.match(selectSorting(category))[1].match(detail)
-        );
-  filterList.forEach((item) => dom.appendChild(item));
+  return detail === 'All'
+    ? Array.from(fullList)
+    : // スタート地点とチーム名の重複を回避するために正規表現で取り出した値に対して一致をかける
+      Array.from(fullList).filter((item) =>
+        item.innerText.match(selectSorting(category))[1].match(detail)
+      );
+}
+
+function recreateList(target, oldList, newList) {
+  // DOMの子要素を入れ替える
+  oldList.forEach((item) => target.removeChild(item));
+  return newList.forEach((item) => target.appendChild(item));
+}
+
+function peekABoo(target, moves, func, arg) {
+  // DOMを入れ替えて再表示
+  const interval = moves.setTime + 0;
+  fadeInOut(target, moves.direction, moves.movePx, moves.setTime);
+  window.setTimeout(() => {
+    func(...arg);
+    fadeInOut(target, moves.direction, 0, moves.setTime);
+  }, interval);
 }
 
 function fadeInOut(dom, direction, movePx, setTime) {
