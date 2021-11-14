@@ -1,6 +1,6 @@
     <div class="selector">
       <form name="filterForm" id="filter" class="form filter">
-        <select name="filterBy" id="select-category" onchange="detailHandler.updateOption(this.form.filterBy.value)">
+        <select name="category" id="select-category" onchange="detailHandler.updateOption(this.form.category.value)">
           <option value="none" selected>項目</option>
           <option value="distance">距離</option>
           <option value="team">チーム</option>
@@ -8,12 +8,12 @@
         </select>
         <select name="detail" id="select-detail">
         </select>
-        <button type="button" name="exeFilter" id="filterButton" onclick="changeBrmList('filter',this.form.filterBy.value,this.form.detail.value)">絞り込み</button>
+        <button type="button" name="exeFilter" id="filterButton" onclick="changeBrmList('filter',this.form.name)">絞り込み</button>
       </form>
       <form name="sortForm" id="sort" class="form sort">
-        <input type="radio" name="sortBy" id="date" value="date" checked><label for="date">日付順</label>
-        <input type="radio" name="sortBy" id="postponeDate" value="postponeDate"><label for="postponeDate">延期後日付順</label>
-        <input type="radio" name="sortBy" id="distance" value="distance"><label for="distance">距離順</label>
-        <button type="button" name="exeSort" id="sortButton" onclick="changeBrmList('sort',this.form.sortBy.value)">並べ替え</button>
+        <input type="radio" name="category" id="date" value="date" checked><label for="date">日付順</label>
+        <input type="radio" name="category" id="postponeDate" value="postponeDate"><label for="postponeDate">延期後日付順</label>
+        <input type="radio" name="category" id="distance" value="distance"><label for="distance">距離順</label>
+        <button type="button" name="exeSort" id="sortButton" onclick="changeBrmList('sort',this.form.name)">並べ替え</button>
       </form>
     </div>

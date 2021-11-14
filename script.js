@@ -1,45 +1,27 @@
-// BRM一覧の初期値とその操作クラス
-const onloadBrmList = new (class {
-  constructor() {
+function changeBrmList(method, formName) {
+  // BRM一覧の更新
+  const sortFormId = 'sort';
+  const filterFormId = 'filter';
+  const property = [this[formName].category, this[formName].detail];
+  new ListHandler(onloadBrmList.brmUl, sortFormId, filterFormId)[method](
+    ...property
+  );
+}
+
+function recreateChild(parent, oldElements, newElements) {
+  // DOMの子要素を入れ替える
+  oldElements.forEach((item) => parent.removeChild(item));
+  return newElements.forEach((item) => parent.appendChild(item));
+}
+
+class PreserveList {
+  constructor(ulQuery) {
     document.addEventListener('DOMContentLoaded', () => {
-      this.brmUl = document.querySelector('.brm-page ul');
+      this.brmUl = document.querySelector(ulQuery);
       this.fullList = this.brmUl.querySelectorAll('li');
-      this.sortForm = document.getElementById('sort');
     });
-    this.selectBrmRegexp = (category) => {
-      // タイトルから抜き出す文字列を決める
-      switch (category) {
-        case 'date':
-          return /BRM(\d{3,})/;
-        case 'distance':
-          return /(\d{3,})km/;
-        case 'team':
-          return /（(\S{2,})）/;
-        case 'depart':
-          return /km\s([\u30a0-\u30ff\u3040-\u309f\u3005-\u3006\u30e0-\u9fcf]+)/; //[日本語に一致]
-        case 'postponeDate':
-          return /BRM(\d{3,})/g; //1行から複数日取得するのでグローバルフラグ
-        default:
-          return undefined;
-      }
-    };
-
-    this.detailListing = (category) => {
-      // カテゴリの正規表現に一致したDOMの配列から重複を除去して返す
-      const regex = this.selectBrmRegexp(category);
-      if (!regex) {
-        return ['All'];
-      }
-      const duplicateDetails = Array.from(this.fullList).map(
-        (item) => item.innerText.match(regex)[1]
-      );
-      const details = Array.from(new Set(duplicateDetails));
-      return details.sort((a, b) =>
-        a.localeCompare(b, 'ja', { numeric: true })
-      );
-    };
-
     this.filtering = (category, detail) => {
+      //thisに入れとかないと動かない
       // 詳細に一致したDOMを返す
       return detail === 'All'
         ? Array.from(this.fullList)
@@ -51,40 +33,95 @@ const onloadBrmList = new (class {
           );
     };
   }
-})();
 
-// フィルター詳細ボックス操作クラス
-const detailHandler = (() =>
-  new (class {
-    constructor() {
-      document.addEventListener('DOMContentLoaded', () => {
-        this.form = document.getElementById('filter');
-        this.category = this.form.querySelector('#select-category');
-        this.detail = this.form.querySelector('#select-detail');
-        //初回、更新時のセレクトボックス再表示
-        this.updateOption(this.category.value);
-      });
+  selectBrmRegexp(category) {
+    // タイトルから抜き出す文字列を決める
+    switch (category) {
+      case 'date':
+        return /BRM(\d{3,})/;
+      case 'distance':
+        return /(\d{3,})km/;
+      case 'team':
+        return /（(\S{2,})）/;
+      case 'depart':
+        return /km\s([\u30a0-\u30ff\u3040-\u309f\u3005-\u3006\u30e0-\u9fcf]+)/; //[日本語に一致]
+      case 'postponeDate':
+        return /BRM(\d{3,})/g; //1行から複数日取得するのでグローバルフラグ
+      default:
+        return undefined;
     }
+  }
 
-    updateOption(category) {
-      // 項目によってセレクトボックスの中身を変化させる
-      const existingDetail = this.detail.querySelectorAll('option');
-      const newDetail = onloadBrmList.detailListing(category).map((item) => {
-        const op = document.createElement('option');
-        ['value', 'text'].forEach((property) => (op[property] = item));
-        return op;
-      });
-      recreateChild(this.detail, existingDetail, newDetail);
+  detailListing(category) {
+    // カテゴリの正規表現に一致したDOMの配列から重複を除去して返す
+    const regex = this.selectBrmRegexp(category);
+    if (!regex) {
+      return ['All'];
     }
-  })())();
+    const duplicateDetails = Array.from(this.fullList).map(
+      (item) => item.innerText.match(regex)[1]
+    );
+    const details = Array.from(new Set(duplicateDetails));
+    return details.sort((a, b) => a.localeCompare(b, 'ja', { numeric: true }));
+  }
+}
 
-class ListHandler {
+class OptionHandler {
+  constructor(formId, parentQuery, childQuery) {
+    document.addEventListener('DOMContentLoaded', () => {
+      this.form = document.getElementById(formId);
+      this.category = this.form.querySelector(parentQuery);
+      this.detail = this.form.querySelector(childQuery);
+      //初回、更新時のセレクトボックス再表示
+      this.updateOption(this.category.value);
+    });
+  }
+
+  updateOption(category) {
+    // 項目によってセレクトボックスの中身を変化させる
+    const existingDetail = this.detail.querySelectorAll('option');
+    const newDetail = onloadBrmList.detailListing(category).map((item) => {
+      const op = document.createElement('option');
+      ['value', 'text'].forEach((property) => (op[property] = item));
+      return op;
+    });
+    recreateChild(this.detail, existingDetail, newDetail);
+  }
+}
+class ActionInCss {
+  constructor() {}
+  fadeInOut(dom, direction, movePx, setTime) {
+    // domで対象を指定。direction:Xで横方向、Yで縦方向。movePxの値フェードアウトする、0を指定するとフェードイン。動作時間をsetTime(ミリ秒)で指定。
+    const opacity = movePx ? 0 : 1;
+    const timer = setTime / 1000;
+    dom.style.transition = `transform ${timer}s,opacity ${timer}s`;
+    dom.style.transform = `translate${direction.toUpperCase()}(${movePx}px)`;
+    dom.style.opacity = opacity;
+  }
+
+  peekABoo(target, moves) {
+    // DOMを入れ替えて再表示
+    const interval = moves.setTime + 0;
+    return (oldElements, newElements) => {
+      this.fadeInOut(target, moves.direction, moves.movePx, moves.setTime);
+      window.setTimeout(() => {
+        recreateChild(target, oldElements, newElements);
+        this.fadeInOut(target, moves.direction, 0, moves.setTime);
+      }, interval);
+    };
+  }
+}
+
+class ListHandler extends ActionInCss {
   // liタグを操作するクラス
-  constructor(target) {
-    this.target = target;
-    this.pageList = target.querySelectorAll('li');
+  constructor(parent, sortFormId, filterFormId) {
+    super();
+    this.parent = parent;
+    this.pageList = parent.querySelectorAll('li');
+    this.sortForm = document.getElementById(sortFormId);
+    this.filterForm = document.getElementById(filterFormId);
     this.update = (moves) => (method) => (argument) =>
-      peekABoo(this.target, moves)([this.pageList, method(...argument)]);
+      this.peekABoo(this.parent, moves)(this.pageList, method(...argument));
     this.sorting = (list, category) => {
       // 並べ替え実行部分
       const listArray = Array.from(list);
@@ -102,50 +139,30 @@ class ListHandler {
     };
   }
 
-  sort(category) {
+  sort() {
     // 並べ替えと再表示
     const moveX = { direction: 'X', movePx: 75, setTime: 500 };
+    const category = this.sortForm.category.value;
     const args = [this.pageList, category];
     this.update(moveX)(this.sorting)(args);
   }
 
-  filter(category, detail) {
+  filter() {
     // フィルタ処理と再表示
     const moveY = { direction: 'Y', movePx: 50, setTime: 500 };
-    const args = [category, detail];
-    this.update(moveY)(onloadBrmList.filtering)(args);
-    onloadBrmList.sortForm.date.checked=true;
+    const sortCategory = this.sortForm.category.value;
+    const category = this.filterForm.category.value;
+    const detail = this.filterForm.detail.value;
+    const args = [onloadBrmList.filtering(category, detail), sortCategory];
+    this.update(moveY)(this.sorting)(args);
   }
 }
 
-function changeBrmList(method, category, detail) {
-  // BRM一覧の更新
-  new ListHandler(onloadBrmList.brmUl)[method](category, detail);
-}
-
-function peekABoo(target, moves) {
-  // DOMを入れ替えて再表示
-  const interval = moves.setTime + 0;
-  return (lists) => {
-    fadeInOut(target, moves.direction, moves.movePx, moves.setTime);
-    window.setTimeout(() => {
-      recreateChild(target, ...lists);
-      fadeInOut(target, moves.direction, 0, moves.setTime);
-    }, interval);
-  };
-}
-
-function fadeInOut(dom, direction, movePx, setTime) {
-  // domで対象を指定。direction:Xで横方向、Yで縦方向。movePxの値フェードアウトする、0を指定するとフェードイン。動作時間をsetTime(ミリ秒)で指定。
-  const opacity = movePx ? 0 : 1;
-  const timer = setTime / 1000;
-  dom.style.transition = `transform ${timer}s,opacity ${timer}s`;
-  dom.style.transform = `translate${direction.toUpperCase()}(${movePx}px)`;
-  dom.style.opacity = opacity;
-}
-
-function recreateChild(target, oldElements, newElements) {
-  // DOMの子要素を入れ替える
-  oldElements.forEach((item) => target.removeChild(item));
-  return newElements.forEach((item) => target.appendChild(item));
-}
+// BRM一覧の初期値とその操作クラス
+const onloadBrmList = new PreserveList('.brm-page ul');
+// フィルター詳細ボックス操作クラス
+const detailHandler = new OptionHandler(
+  'filter',
+  '#select-category',
+  '#select-detail'
+);
