@@ -1,7 +1,15 @@
+// 捜査対象の定義と初期化
+const handleUlQuery ='.brm-page ul'
+const filterFormId = 'filter';
+const filterCategoryId = 'select-category'
+const filterDetailId = 'select-detail'
+const sortFormId = 'sort';
+document.addEventListener('DOMContentLoaded', () => {
+  [filterFormId,sortFormId].forEach(id=>document.getElementById(id).reset());
+});
+
 function changeBrmList(method, formName) {
   // BRM一覧の更新
-  const sortFormId = 'sort';
-  const filterFormId = 'filter';
   const property = [this[formName].category, this[formName].detail];
   new ListHandler(onloadBrmList.brmUl, sortFormId, filterFormId)[method](
     ...property
@@ -159,10 +167,10 @@ class ListHandler extends ActionInCss {
 }
 
 // BRM一覧の初期値とその操作クラス
-const onloadBrmList = new PreserveList('.brm-page ul');
+const onloadBrmList = new PreserveList(handleUlQuery);
 // フィルター詳細ボックス操作クラス
 const detailHandler = new OptionHandler(
-  'filter',
-  '#select-category',
-  '#select-detail'
+  filterFormId,
+  '#'+filterCategoryId,
+  '#'+filterDetailId
 );
