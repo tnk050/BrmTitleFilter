@@ -4,14 +4,16 @@
       <select
         name="filterCategory"
         id="selectCategory"
-        onchange="detailHandler.updateOption(this.form.category.value)"
+        onchange="updateOption(this.form.filterDetail,this.value)"
       >
         <option value="none" selected>項目</option>
         <option value="distance">距離</option>
         <option value="team">チーム</option>
         <option value="depart">スタート地点</option>
       </select>
-      <select name="filterDetail" id="selectDetail"></select>
+      <select name="filterDetail" id="selectDetail">
+        <option value="All" selected>All</option>
+      </select>
       <button
         type="button"
         name="exeFilter"
