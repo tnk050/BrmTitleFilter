@@ -1,0 +1,27 @@
+.form-brm {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.form div {
+  margin: 1em;
+}
+
+.filter {
+  display: flex;
+  align-items: center;
+}
+
+.filter select {
+  margin-right: 1em;
+  height: 80%; /*adjust to your site*/
+}
+
+.sort {
+  display: flex;
+  align-items: center;
+}
+
+.sort label {
+  margin-right: 1em;
+}
